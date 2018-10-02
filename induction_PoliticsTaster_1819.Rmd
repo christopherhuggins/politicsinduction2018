@@ -1,0 +1,150 @@
+---
+title: "Are UK elections fair and representative?"
+subtitle: "Politics taster session for 2018/2019 induction"
+author: "Dr Christopher Huggins"
+date: "September 2018"
+output: tint::tintPdf
+bibliography: skeleton.bib
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tint)
+# invalidate cache when the package version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tint'))
+options(htmltools.dir.version = FALSE)
+```
+
+UK elections are often seen as unfair because the number of seats won by each party in parliament does not always reflect the number of votes cast. But how much of a problem is this? Is it something we should be worried about?
+
+# Exercise 1
+
+In groups of two, have a look at the following two graphs. The first graph shows how many votes each of the main parties received during the 2017 general election. The second graph shows how many seats they won in parliament.
+
+```{r graph1, fig.cap = "Votes received at the 2017 general election", fig.height=2.2, warning=FALSE, message=FALSE, cache=TRUE, echo = FALSE}
+library(tidyverse)
+
+#Data from Electoral Commission website: https://www.electoralcommission.org.uk/our-work/our-research/electoral-data/electoral-data-files-and-reports
+votes <- read.csv("data/2017 UKPGE electoral data 4.csv", skip = 1)
+
+votes$Party.Identifer <- recode(votes$Party.Identifer, "Conservative" = "Conservative", "Labour" = "Labour", "Liberal Democrats" = "Lib Dems", "SNP" = "SNP", "UKIP" = "UKIP", "Green Party" = "Green", "DUP" = "DUP", "Sinn Féin" = "Sinn Féin", "Plaid Cymru" = "Plaid Cymru", .default = "Other")
+
+all_votes <- votes %>%
+  group_by(Party.Identifer) %>%
+  summarise(total_votes = sum(Valid.votes)) %>%
+  mutate(pct_votes = total_votes / sum(total_votes) * 100)
+
+ggplot(all_votes, aes(x = reorder(Party.Identifer, -total_votes), y = total_votes/1000000, fill = Party.Identifer)) +
+  geom_bar(stat = "identity") +
+    scale_fill_manual(values = c("Conservative" = "#0087DC", "Labour" = "#DC241f", "Lib Dems" = "#FAA61A", "SNP" = "#FEF987", "UKIP" = "#70147A", "Green" = "#6AB023", "DUP" = "#D46A4C", "Sinn Féin" = "#008800", "Plaid Cymru" = "#008142", "Other" = "#DDDDDD"), guide = FALSE) +
+  geom_text(aes(label = paste(format(total_votes, big.mark = ","), "\n", round(pct_votes,1), "%")), angle = 90, hjust = -0.1, size = 2) +
+  scale_y_continuous(limits = c(0,32.204173)) +
+  annotate("text", x = 8, y = 25, label = "Total electorate: 46,843,896\nVotes cast: 32,204,173\nTurnout: 68.7%", size = 2) +
+  theme_minimal(base_size = 6) +
+  theme(panel.grid.major.x = element_blank()) +
+  labs(x = "Party", y = "Votes received (millions)", caption = "Data: Electoral Commission (2018)")
+```
+
+```{r graph2, fig.cap = "Seats won at the 2017 general election", fig.height=2.2, warning=FALSE, message=FALSE, cache=TRUE, echo = FALSE}
+library(tidyverse)
+
+seats <- read.csv("data/HoC-GE2017-constituency-results.csv")
+
+seats$first_party <- recode(seats$first_party, "Con" = "Conservative", "Lab" = "Labour", "LD" = "Lib Dems", "SNP" = "SNP", "UKIP" = "UKIP", "Green" = "Green", "DUP" = "DUP", "SF" = "Sinn Féin", "PC" = "Plaid Cymru", .default = "Other")
+
+all_seats <- seats %>%
+  group_by(first_party) %>%
+  summarise(total_seats = n()) %>%
+  mutate(pct_seats = total_seats / sum(total_seats) * 100) %>%
+  add_row(first_party = "UKIP", total_seats = 0, pct_seats = 0)
+
+ggplot(all_seats, aes(x = reorder(first_party, -total_seats), y = total_seats, fill = first_party)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Conservative" = "#0087DC", "Labour" = "#DC241f", "Lib Dems" = "#FAA61A", "SNP" = "#FEF987", "UKIP" = "#70147A", "Green" = "#6AB023", "DUP" = "#D46A4C", "Sinn Féin" = "#008800", "Plaid Cymru" = "#008142", "Other" = "#DDDDDD"), guide = FALSE) +
+  geom_text(aes(label = paste(total_seats, "\n", round(pct_seats,1), "%")), angle = 90, hjust = -0.1, size = 2) +
+  scale_y_continuous(limits = c(0,650)) +
+  annotate("text", x = 8, y = 550, label = "Seats available: 650\nSeats needed for majority: 326", size = 2) +
+  theme_minimal(base_size = 6) +
+  theme(panel.grid.major.x = element_blank()) +
+  labs(x = "Party", y = "Seats won", caption = "Data: House of Commons Library (2017)")
+```
+
+`r newthought('Discuss the following questions')`:
+
+1. How accurately does the number of seats won reflect the number of votes received by each party?
+2. Do you think this allocation of seats is fair?
+
+***
+
+# Exercise 2
+
+This mismatch between the votes cast for each party and the number of seats they win is known as 'disproportionality'. Again in your groups of two, have a look at the chart to the right. This shows an index of electoral disprortionality in UK elections since 1945. The higher the index, the higher the level of disproportionality.
+
+```{r graph3, fig.margin = TRUE, fig.cap = "Disproportionality of UK general elections since 1945", fig.height=4, cache=TRUE, echo=FALSE}
+library(ggplot2)
+
+#Data from Stuart Wilks-Heeg at the University of Liverpool
+disproportionality <- read.csv("data/disproportionality.csv")
+
+ggplot(disproportionality, aes(x = year, y = dv)) +
+  geom_line() +
+  scale_x_continuous(limits = c(1945, 2017), breaks = c(1950, 1960, 1970, 1980, 1990, 2000, 2010)) +
+  scale_y_continuous(limits = c(0,40)) +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.minor.x = element_blank()) +
+  labs(x = "Year", y = "Deviation from proportionality", caption = "Data: Stuart Wilks-Heeg, University of Liverpool")
+```
+
+`r newthought('Discuss the following questions')`:
+
+1. What sort of a trend do you notice?
+2. Is disproportionality in UK elections getting higher or lower?
+
+***
+
+# Exercise 3
+
+One of the reasons for the disproportionality in UK elections is the electoral system used.
+
+There are many types of electoral systems, but they generally fall into two categories: 'majoritarian' and 'proportional'. Under majoritarian systems, candidates need to win a plurality (i.e. the most) or a majority (i.e. more than 50%) of the votes cast for each seat. Under proportional representation, seats are allocated to parties in propotion to the total number of votes they receive.
+
+For general elections, the UK uses a majoritarian system called the 'single member plurality' system (also known as 'first past the post'). Under this system, the UK is divided into a number of constituencies, which are supposed to represent roughly the same number of people. Voters then cast their vote for a single candidate to represent their constituency. The winning candidate is simply the one who receives more votes than any of the other candidates running in each constituency. This could mean a winning candidate only receives a minority of all the votes cast in their constituency.
+
+Because this system leads to disproportionality, it has received a lot of criticism. Again in your groups of two, have a look at the arguments below listing the alleged advantages and disadvantages of the single member plurality system:
+
+## Arguments in favour of the single member plurality system`r margin_note("Adapted from Heywood (2013, p. 208).")`
+
+* It establishes a clear link between representatives and their constituents.
+* It offers the electorate a clear choice of potential parties of government.
+* It allows governments to be formed that have a clear mandate from the electroate.
+* It keeps extremism at bay by making it more difficult for small radical parties to gain seats and credibility.
+* It makes for a strong and effective government in that a single party usually has majority control of parliament.
+* It produces a stable government as single-party governments rarely collapse as a result of disunity and internal friction.
+
+## Arguments against the single member plurality system
+
+* The system wastes many votes, both those cast for losing candidates and those cast for winning ones already over the plurality mark.
+* It distorts electoral preferences by 'under-representing' small parties and ones with geographically evenly distributed support.
+* It offers limited choice because it usually produces two major political parties.
+* It undermines the legitimacy of government, in that governments often enjoy only minority support from the electorate, producing a system of plurality rule.
+* It creates instability because a change in government can lead to a radical shift in policies and direction.
+* It leads to unaccountable government as the legislature (parliament) is usually subordinate to the executive (the government), because the majority of its members are supporters of the governing party.
+* It discourages the selection of a socially broad spread of candidates in favour of those who are attractive to a large body of voters.
+
+`r newthought('Discuss the following questions')`:
+
+1. Which of the arguments do you agree with? Which do you disagree with?
+2. Do you think the alleged advantages of the single member plurality system outweigh its drawbacks?
+3. How do some of the arguments for and against the single member plurality system stack up in practice?
+
+***
+
+# Further reading
+Chapter 9 'Representation, Elections and Voting' in Heywood, A. (2013). *Politics*. (4^th^ ed.). Basingstoke: Palgrave Macmillan.
+
+***
+
+# Bibliography
+* Electoral Commission. (2018). *Electoral data files and reports*. Retrieved from: [https://www.electoralcommission.org.uk/our-work/our-research/electoral-data/electoral-data-files-and-reports](https://www.electoralcommission.org.uk/our-work/our-research/electoral-data/electoral-data-files-and-reports).
+* Heywood, A. (2013). *Politics*. (4^th^ ed.). Basingstoke: Palgrave Macmillan.
+* House of Commons Library. (2017). *General Election 2017: full results and analysis*. Retrieved from: [https://researchbriefings.parliament.uk/ResearchBriefing/Summary/CBP-7979](https://researchbriefings.parliament.uk/ResearchBriefing/Summary/CBP-7979).
